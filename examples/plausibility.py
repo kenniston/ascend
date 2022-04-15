@@ -7,9 +7,9 @@
 """
 
 import pandas
-from ascend.base import FeatureRunner, FeatureParam, Feature, FeatureResult
-from ascend.features.art import ArtFeature, ArtFeatureParam
-from ascend.features.common import CommonFeature
+from ascendcontroller.base import CSVRunner, FeatureParam, Feature, FeatureResult
+from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
+from ascendcontroller.features.common import CommonFeature
 
 
 class ArtParam(ArtFeatureParam):
@@ -33,14 +33,14 @@ class DMVFeature(Feature):
 
     def process(self, data) -> FeatureResult:
         params = self.factory.build(data)
-
         return FeatureResult()
 
 
 if __name__ == '__main__':
     root_path = "/home/kenniston/mestrado-ita/materiais/SBSeg/projetos/dataset-veremi/simulationscsv2"
-    FeatureRunner(
+    CSVRunner(
         path=root_path,
         destination=f'{root_path}/result-plausibility/',
-        algorithms=[CommonFeature(), ArtFeature(factory=ArtParam)]
+        features=[CommonFeature(), ArtFeature(factory=ArtParam)],
+        processes=1
     ).process()

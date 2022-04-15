@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# ASCEND Framework
+# ASCEND Controller Framework
 #
-# Copyright (c) 2011-2022, ASCEND Development Team
+# Copyright (c) 2011-2022, ASCEND Controller Development Team
 # Copyright (c) 2011-2022, Open source contributors.
 # All rights reserved.
 #
@@ -36,39 +36,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # ---------------------------------------------------------------------------
 
-import pandas
-from ascend.base import Feature, FeatureResult
+"""ASCEND Controller is a research framework with functions and algorithms.
 
+More information is available at https://ita.br
+"""
 
-class CommonFeature(Feature):
-    """ Feature class for commom columns
+import sys
 
-        This class returns a new DataFrame with the follow columns:
-        - receiver
-        - sender
-        - messageID
-        - RSSI
-        - attackerType
-    """
-
-    def __init__(self):
-        super().__init__(factory=None)
-
-    # Process the common columns
-    def process(self, data) -> FeatureResult:
-        return FeatureResult(
-            pandas.DataFrame([[
-                int(data['receiver']),
-                int(data['sender']),
-                int(data['messageID']),
-                data['RSSI'],
-                int(data['attackerType'])
-            ]],
-                columns=[
-                'receiver',
-                'sender',
-                'messageID',
-                'RSSI',
-                'attackerType'
-            ])
-        )
+if sys.version_info < (3, 6):
+    raise Exception('ascend-controller %s requires Python 3.6 or newer.' % version)

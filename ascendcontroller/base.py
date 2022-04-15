@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# ASCEND Framework
+# ASCEND Controller Framework
 #
-# Copyright (c) 2011-2022, ASCEND Development Team
+# Copyright (c) 2011-2022, ASCEND Controller Development Team
 # Copyright (c) 2011-2022, Open source contributors.
 # All rights reserved.
 #
@@ -39,14 +39,13 @@
 import os
 import re
 import errno
+import pandas
 from enum import Enum
 import multiprocessing as mp
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from multiprocessing import cpu_count
-from typing import Any, Generic, Iterable, NamedTuple
-
-import pandas
+from typing import Any, Iterable, NamedTuple
 
 
 class ResultType(Enum):
@@ -62,7 +61,7 @@ class ConfusionMatrix(Enum):
 
 
 class FeatureResult(NamedTuple):
-    data: Any
+    data: pandas.DataFrame
     error: RuntimeError
 
 
@@ -98,9 +97,9 @@ class Feature(ABC):
             return ConfusionMatrix.FP
 
 
-class FeatureRunner:
+class CSVRunner:
     def __init__(
-            self, path: str, destination: str, algorithms: Iterable[Feature],
+            self, path: str, destination: str, features: Iterable[Feature],
             processes: int = 0, prefix: str = 'result', ext: str = 'csv'):
         # Root path for files
         self.path = path
@@ -111,7 +110,7 @@ class FeatureRunner:
         # Create target directory
         self.create_destination()
         # List of algorithms to process
-        self.algorithms = algorithms
+        self.features = features
         # CPU Count
         self.processes = cpu_count() if processes <= 0 else processes
         # Result file prefix
@@ -139,23 +138,18 @@ class FeatureRunner:
         print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
         output_file = f'{self.destination}{self.prefix}{idsim:03d}.{self.ext}'
         data_frame = pandas.read_csv(file)
-        data_log = pandas.DataFrame()
-        for index, row in data_frame.iterrows():
-            row_data = pandas.DataFrame()
-            # Runs all algorithms for each line of the simulation file.
-            for alg in self.algorithms:
-                result: FeatureResult = alg.process(row)
-                # If result file is not None, save the result DataFrame in the new algorithm file. Otherwise,
-                # merge the result DataFrame into the main file.
-                if result.error is not None:
-                    print(f'Error processing {file} on feature {alg}. Error: {result.error}')
-                    continue
-                else:
-                    row_data = pandas.concat([row_data, result.data], axis=1)
-            data_log = pandas.concat([data_log, row_data])
-        # If the main data is not empty, save the CSV file.
-        if not data_log.empty:
-            data_log.to_csv(output_file)
+        # Runs all algorithms for each line of the simulation file.
+        for feature in self.features:
+            result: FeatureResult = feature.process(data_frame)
+            # If result file is not None, save the result DataFrame in the new algorithm file. Otherwise,
+            # merge the result DataFrame into the main file.
+            if result.error is not None:
+                print(f'Error processing {file} on feature {feature}. Error: {result.error}')
+                continue
+            else:
+                # If the main data is not empty, save the CSV file.
+                if not result.data.empty:
+                    result.data.to_csv(output_file)
 
     def create_destination(self):
         dest = self.destination

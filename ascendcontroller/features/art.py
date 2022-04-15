@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# ASCEND Framework
+# ASCEND Controller Framework
 #
-# Copyright (c) 2011-2022, ASCEND Development Team
+# Copyright (c) 2011-2022, ASCEND Controller Development Team
 # Copyright (c) 2011-2022, Open source contributors.
 # All rights reserved.
 #
@@ -36,11 +36,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # ---------------------------------------------------------------------------
 
+import pandas
 from abc import ABC
 from typing import Sequence, Tuple
-import pandas
 from scipy.spatial import distance
-from ascend.base import Feature, FeatureResult, ResultType, FeatureParam
+from ascendcontroller.base import Feature, FeatureResult, ResultType, FeatureParam
 
 
 class ArtFeatureParam(FeatureParam, ABC):

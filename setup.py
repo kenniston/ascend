@@ -4,13 +4,13 @@ with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setup(
-    name='ascend',
+    name='ascendcontroller',
     version='0.0.1',
-    author='ASCEND Group',
-    author_email='ascend@ita.br',
+    author='ASCEND Controller Group',
+    author_email='ascend-controller@ita.br',
     url='ita.br',
     license='BSD',
-    description='ASCEND research functions and algorithms.',
+    description='ASCEND Controller research functions and algorithms.',
     # Long description read from the the readme file
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -27,5 +27,10 @@ setup(
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.6',
-    install_requires=[]
+    install_requires=[
+        'pandas>=1.4.2',
+        'typing_extensions>=4.1.1',
+        'scipy>=1.8.0',
+        'ipykernel>=6.13.0'
+    ]
 )

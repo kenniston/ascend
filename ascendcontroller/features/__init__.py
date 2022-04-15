@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
-# ASCEND Framework
+# ASCEND Controller Framework
 #
-# Copyright (c) 2011-2022, ASCEND Development Team
+# Copyright (c) 2011-2022, ASCEND Controller Development Team
 # Copyright (c) 2011-2022, Open source contributors.
 # All rights reserved.
 #
@@ -36,6 +36,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # ---------------------------------------------------------------------------
 
-"""ASCEND algorithm features.
+"""ASCEND Controller algorithm features.
 
 """

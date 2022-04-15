@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Building ASCEND framework..."
+echo "Building ASCEND Controller framework..."
 python setup.py sdist
-echo "Installing ASCEND framework..."
-python -m pip install .
+echo "Installing ASCEND Controller framework..."
+pip install .

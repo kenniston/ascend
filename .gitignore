@@ -51,6 +51,8 @@ dist
 *.egg-info
 .eggs
 .pypirc
+# virtual environment
+venv
 
 # tox testing tool
 .tox
