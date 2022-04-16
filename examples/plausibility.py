@@ -56,6 +56,5 @@ if __name__ == '__main__':
     CSVRunner(
         path=root_path,
         destination=f'{root_path}/result-plausibility/',
-        features=[ArtFeature(factory=ArtParam)],
-        processes=1
+        features=[ArtFeature(factory=ArtParam)]
     ).process()

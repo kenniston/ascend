@@ -62,7 +62,7 @@ class ConfusionMatrix(Enum):
 
 class FeatureResult(NamedTuple):
     data: pandas.DataFrame
-    error: RuntimeError
+    error: RuntimeError = None
 
 
 class FeatureParam(ABC):
@@ -142,8 +142,7 @@ class CSVRunner:
         # Run all features for each simulation file.
         for feature in self.features:
             result: FeatureResult = feature.process(data_frame)
-            # If result file is not None, save the result DataFrame in the new algorithm file. Otherwise,
-            # merge the result DataFrame into the main file.
+            # Check for current feature output error
             if result.error is not None:
                 print(f'Error processing {file} on feature {feature}. Error: {result.error}')
                 continue

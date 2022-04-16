@@ -52,7 +52,7 @@ class ArtFeatureParam(FeatureParam, ABC):
 
 class ArtFeature(Feature):
     """
-        Required olumns in Data Frame:
+        Required columns in Data Frame:
             - senderPosition        - (x, y, z) tuple
             - receiverPosition      - (x, y, z) tuple
             - attackerType          - integer for attack type [0 - normal, 1 - attack]
