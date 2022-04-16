@@ -45,7 +45,7 @@ import multiprocessing as mp
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from multiprocessing import cpu_count
-from typing import Iterable, NamedTuple
+from typing import Iterable, NamedTuple, Sequence
 
 
 class ResultType(Enum):
@@ -63,6 +63,7 @@ class ConfusionMatrix(Enum):
 class FeatureResult(NamedTuple):
     data: pandas.DataFrame
     error: RuntimeError = None
+    prefix: str = ''
 
 
 class FeatureParam(ABC):
@@ -100,7 +101,8 @@ class Feature(ABC):
 class CSVRunner:
     def __init__(
         self, path: str, destination: str, features: Iterable[Feature],
-        processes: int = 0, prefix: str = 'result', ext: str = 'csv'
+        processes: int = 0, prefix: str = 'result', ext: str = 'csv',
+        idxfilter: Sequence = []
     ):
         # Root path for files
         self.path = path
@@ -118,17 +120,23 @@ class CSVRunner:
         self.prefix = prefix
         # Result file extension
         self.ext = ext
+        # File filter indexes
+        self.idxfilter = idxfilter
 
     def process(self):
         # Finished file list
-        finished = [re.search(r'\d+', f).group() for f in os.listdir(self.destination)
+        finished = [int(re.search(r'\d+', f).group()) for f in os.listdir(self.destination)
                     if os.path.isfile(f'{self.destination}{f}')]
         finished.sort()
         # List files in current directory
         files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        files.sort()
         # Filter unprocessed files
-        files = list(filter(lambda f: re.search(r'\d+', f).group() not in finished, files))
-        simulations = pandas.Series(files).sort_values().reset_index(drop=True)
+        files = list(filter(lambda f: int(re.search(r'\d+', f).group()) not in finished, files))
+        # Filter index files
+        files = list(filter(lambda f: int(re.search(r'\d+', f).group()) in self.idxfilter, files))
+        # Create files Data Frame
+        simulations = pandas.Series(files).reset_index(drop=True)
         # Process files within workers
         with mp.Pool(processes=self.processes) as pool:
             pool.map(self.worker, enumerate(simulations))
@@ -137,7 +145,6 @@ class CSVRunner:
     def worker(self, sim):
         idsim, file = sim
         print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
-        output_file = f'{self.destination}{self.prefix}{idsim:03d}.{self.ext}'
         data_frame = pandas.read_csv(file)
         # Run all features for each simulation file.
         for feature in self.features:
@@ -149,6 +156,8 @@ class CSVRunner:
             else:
                 # If the main data is not empty, save the CSV file.
                 if not result.data.empty:
+                    idx = int(re.search(r'\d+', file).group())
+                    output_file = f'{self.destination}{result.prefix}{self.prefix}{idx:03d}.{self.ext}'
                     result.data.to_csv(output_file)
 
     def create_destination(self):

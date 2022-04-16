@@ -84,4 +84,4 @@ class ArtFeature(Feature):
                 row.attackerType == 1, row[f'art{threshold}'] == ResultType.Attack.name).name, axis=1)
 
         # Return result DataFrame
-        return FeatureResult(df)
+        return FeatureResult(data=df, prefix='art-')
