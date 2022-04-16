@@ -111,16 +111,19 @@ class DMVFeature(Feature):
     def __init__(self, factory: FeatureParam):
         super().__init__(factory)
 
-    def process(self, data) -> FeatureResult:
+    def process(self, data: pandas.DataFrame) -> FeatureResult:
         params = self.factory.build(data)
         return FeatureResult()
 
 
 if __name__ == '__main__':
     root_path = "/home/kenniston/mestrado-ita/materiais/SBSeg/projetos/dataset-veremi/simulationscsv2"
+
+    # VeReMi Misbehavior file filter
     filter = [*range(10, 15)] + [*range(40, 45)] + [*range(55, 60)] + \
              [*range(85, 90)] + [*range(100, 105)] + [*range(130, 135)] + \
              [*range(145, 150)] + [*range(175, 180)]
+
     CSVRunner(
         path=root_path,
         destination=f'{root_path}/result-plausibility/',

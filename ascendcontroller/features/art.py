@@ -46,8 +46,6 @@ from ascendcontroller.base import Feature, FeatureResult, ResultType, FeaturePar
 class ArtFeatureParam(FeatureParam, ABC):
     # List for Acceptance Range Threshold Detector
     thresholds: Sequence[int]
-    # Data Frame to process
-    data: pandas.DataFrame
 
 
 class ArtFeature(Feature):

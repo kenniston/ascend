@@ -67,6 +67,9 @@ class FeatureResult(NamedTuple):
 
 
 class FeatureParam(ABC):
+    # Data Frame to process
+    data: pandas.DataFrame
+
     @staticmethod
     def build(data: pandas.DataFrame) -> Self:
         raise NotImplementedError
