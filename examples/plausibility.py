@@ -9,16 +9,31 @@
 import pandas
 from ascendcontroller.base import CSVRunner, FeatureParam, Feature, FeatureResult
 from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
-from ascendcontroller.features.common import CommonFeature
 
 
 class ArtParam(ArtFeatureParam):
+    """ ArtFeature require a specific DataFrame with following columns:
+
+        - senderPosition        - (x, y, z) tuple
+        - receiverPosition      - (x, y, z) tuple
+        - attackerType          - integer for attack type [0 - normal, 1 - attack]
+    """
     def build(data: pandas.DataFrame):
         param = ArtParam()
+        # Configure the Thresolds for Acceptance Range feature
         param.thresholds = [100, 200, 300, 400, 450, 500, 550, 600, 700, 800]
-        param.svect = (data['pxSnd'], data['pySnd'], data['pzSnd'])
-        param.rvect = (data['pxRcv'], data['pyRcv'], data['pzRcv'])
-        param.atype = int(data['attackerType'])
+
+        # Create the required columns for the feature
+        data['senderPosition'] = data.apply(lambda row: (row.pxSnd, row.pySnd, row.pzSnd), axis=1)
+        data['receiverPosition'] = data.apply(lambda row: (row.pxRcv, row.pyRcv, row.pzRcv), axis=1)
+        data['messageID'] = data.apply(lambda row: int(row.messageID), axis=1)
+        data['sender'] = data.apply(lambda row: int(row.sender), axis=1)
+
+        # Drop unnecessary columns from Data Frame
+        data = data.drop(columns=['sendTime', 'gpsTime', 'rcvTime', 'pxSnd', 'pySnd', 'pzSnd', 'sxSnd',
+                                  'sySnd', 'szSnd', 'pxRcv', 'pyRcv', 'pzRcv', 'sxRcv', 'syRcv', 'szRcv'])
+
+        param.data = data
         return param
 
 
@@ -41,6 +56,6 @@ if __name__ == '__main__':
     CSVRunner(
         path=root_path,
         destination=f'{root_path}/result-plausibility/',
-        features=[CommonFeature(), ArtFeature(factory=ArtParam)],
+        features=[ArtFeature(factory=ArtParam)],
         processes=1
     ).process()

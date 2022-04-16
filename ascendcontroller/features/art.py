@@ -38,7 +38,7 @@
 
 import pandas
 from abc import ABC
-from typing import Sequence, Tuple
+from typing import Sequence
 from scipy.spatial import distance
 from ascendcontroller.base import Feature, FeatureResult, ResultType, FeatureParam
 
@@ -46,46 +46,42 @@ from ascendcontroller.base import Feature, FeatureResult, ResultType, FeaturePar
 class ArtFeatureParam(FeatureParam, ABC):
     # List for Acceptance Range Threshold Detector
     thresholds: Sequence[int]
-    # Sender vector column names
-    svect: Tuple
-    # Receiver vector column names
-    rvect: Tuple
-    # Attacker Type column name
-    atype: int
+    # Data Frame to process
+    data: pandas.DataFrame
 
 
 class ArtFeature(Feature):
+    """
+        Required olumns in Data Frame:
+            - senderPosition        - (x, y, z) tuple
+            - receiverPosition      - (x, y, z) tuple
+            - attackerType          - integer for attack type [0 - normal, 1 - attack]
+    """
+
     def __init__(self, factory: ArtFeatureParam):
         super().__init__(factory=factory)
 
     # noinspection PyMethodMayBeStatic
-    def process(self, data) -> FeatureResult:
-        params = self.factory.build(data)
-        columns = ['distance'] + list(map(lambda x: f'art{x}', params.thresholds)) + list(
-            map(lambda x: f'cmart{x}', params.thresholds))
+    def process(self, data: pandas.DataFrame) -> FeatureResult:
+        params: ArtFeatureParam = self.factory.build(data)
+        df = params.data
 
-        # Create Result DataFrame with ART Columns
-        data_log = pandas.DataFrame(columns=columns)
-        # Check distance between sender and receiver
-        dst = distance.euclidean(params.svect, params.rvect)
+        # Create distance column in Data Frame
+        df['distance'] = df.apply(
+            lambda row: distance.euclidean(row.senderPosition, row.receiverPosition), axis=1)
+
+        # Remove position columns
+        df = df.drop(columns=['senderPosition', 'receiverPosition'])
+
+        # Check for attacker for the current threshold
+        for threshold in params.thresholds:
+            df[f'art{threshold}'] = df.apply(lambda row: ResultType.Normal.name
+                                             if row.distance <= threshold else ResultType.Attack.name, axis=1)
 
         # Check confusion matrix for each distance
-        art_results = []
-        confusion_results = []
         for threshold in params.thresholds:
-            # Check for attacks by distance
-            result = ResultType.Normal if dst <= threshold else ResultType.Attack
-            # Get confusion matrix result
-            attacker = params.atype == 1
-            detected = result is ResultType.Attack
-            confusion = self.confusion_matrix(attacker, detected)
-            # Store results
-            art_results.append(result.name)
-            confusion_results.append(confusion.name)
+            df[f'cmtx{threshold}'] = df.apply(lambda row: self.confusion_matrix(
+                row.attackerType == 1, row[f'art{threshold}'] == ResultType.Attack.name).name, axis=1)
 
-        # Add row in DataFrame
-        data = pandas.DataFrame(
-            [[dst] + art_results + confusion_results], columns=columns)
-        data_log = pandas.concat([data_log, data], ignore_index=True)
         # Return result DataFrame
-        return FeatureResult(data_log)
+        return FeatureResult(df)

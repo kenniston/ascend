@@ -45,7 +45,7 @@ import multiprocessing as mp
 from typing_extensions import Self
 from abc import ABC, abstractmethod
 from multiprocessing import cpu_count
-from typing import Any, Iterable, NamedTuple
+from typing import Iterable, NamedTuple
 
 
 class ResultType(Enum):
@@ -67,7 +67,7 @@ class FeatureResult(NamedTuple):
 
 class FeatureParam(ABC):
     @staticmethod
-    def build(data) -> Self:
+    def build(data: pandas.DataFrame) -> Self:
         raise NotImplementedError
 
 
@@ -82,7 +82,7 @@ class Feature(ABC):
         self.factory = factory
 
     @abstractmethod
-    def process(self, data) -> FeatureResult:
+    def process(self, data: pandas.DataFrame) -> FeatureResult:
         pass
 
     # noinspection PyMethodMayBeStatic
@@ -99,8 +99,9 @@ class Feature(ABC):
 
 class CSVRunner:
     def __init__(
-            self, path: str, destination: str, features: Iterable[Feature],
-            processes: int = 0, prefix: str = 'result', ext: str = 'csv'):
+        self, path: str, destination: str, features: Iterable[Feature],
+        processes: int = 0, prefix: str = 'result', ext: str = 'csv'
+    ):
         # Root path for files
         self.path = path
         # Change Dataset directory
@@ -138,7 +139,7 @@ class CSVRunner:
         print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
         output_file = f'{self.destination}{self.prefix}{idsim:03d}.{self.ext}'
         data_frame = pandas.read_csv(file)
-        # Runs all algorithms for each line of the simulation file.
+        # Run all features for each simulation file.
         for feature in self.features:
             result: FeatureResult = feature.process(data_frame)
             # If result file is not None, save the result DataFrame in the new algorithm file. Otherwise,
