@@ -37,7 +37,7 @@
 # ---------------------------------------------------------------------------
 
 """
-    VeReMi: A Dataset for Comparable Evaluationof Misbehavior Detection 
+    VeReMi: A Dataset for Comparable Evaluationof Misbehavior Detection
             in VANETs
     =========================================================================
 
@@ -106,7 +106,13 @@
 
 """
 
+from cProfile import label
+import os
+import re
+import pandas
 from enum import Enum
+from typing import Dict, Sequence, Tuple
+from matplotlib import pyplot as plt
 
 
 class SimulationDensity(Enum):
@@ -123,6 +129,18 @@ class AttackType(Enum):
     TYPE16 = 16,
 
 
+class ChartFeature(Enum):
+    ART = 1,
+    SAW = 2.
+    SSC = 3,
+    DMV = 4
+
+
+LineChartData = Tuple[pandas.DataFrame, str]
+LineChartVector = Sequence[LineChartData]
+LineChartDict = Dict[SimulationDensity, LineChartVector]
+
+
 VEHICULAR_LOW_ATTACK1_HIGH = [*range(10, 15)]
 VEHICULAR_HIGH_ATTACK1_HIGH = [*range(40, 45)]
 
@@ -137,3 +155,151 @@ VEHICULAR_HIGH_ATTACK8_HIGH = [*range(175, 180)]
 
 VEHICULAR_LOW_ATTACK16_HIGH = [*range(190, 195)]
 VEHICULAR_HIGH_ATTACK16_HIGH = [*range(220, 225)]
+
+
+class ArtPeformanceResult:
+    """ ArtPeformanceResult reads Acceptance Range Threshold and plots a graphs
+        with precision and recal values.
+    """
+
+    def __init__(self, files: Sequence):
+        self.files = files
+        self.thresholds = [100, 200, 300, 400, 450, 500, 550, 600, 700, 800]
+
+    def run(self) -> Sequence:
+        df = pandas.concat([pandas.read_csv(f) for f in self.files])
+        values = {}
+        for threshold in self.thresholds:
+            # Calculate the precision and recall
+            counts = df[f'cmtx{threshold}'].value_counts()
+            precision = getattr(counts, 'TP', 0) / (getattr(counts, 'TP', 0) + getattr(counts, 'FP', 0))
+            recall = getattr(counts, 'TP', 0) / (getattr(counts, 'TP', 0) + getattr(counts, 'FN', 0))
+            values[threshold] = [precision, recall]
+        return values
+
+    @staticmethod
+    def get_result_data(
+        result_path: str,
+        fl: str,
+        fh: str,
+        lowidx: Sequence,
+        highidx: Sequence
+    ) -> Tuple[pandas.DataFrame, pandas.DataFrame]:
+        low_df = None if not os.path.exists(f'{result_path}{fl}') else pandas.read_csv(f'{result_path}{fl}')
+        high_df = None if not os.path.exists(f'{result_path}{fh}') else \
+            pandas.read_csv(f'{result_path}{fh}')
+
+        if high_df is None or low_df is None:
+            # Process result files
+            result_files = [f for f in os.listdir(result_path) if os.path.isfile(f'{result_path}{f}')]
+
+            # Process the Acceptance Range Threshold result for LOW density (ATTACKER TYPE 1)
+            low_density_indexes = lowidx
+            low_density_files = list(filter(lambda f: int(re.search(r'\d+', f).group())
+                                            in low_density_indexes, result_files))
+            low_density_files = list(map(lambda f: f'{result_path}{f}', low_density_files))
+            low_data = ArtPeformanceResult(files=low_density_files).run()
+            low_df = pandas.DataFrame.from_dict(low_data, orient='index', columns=['Precision', 'Recall'])
+            low_df.to_csv(f'{result_path}{fl}', index_label='Distance')
+
+            # Process the Acceptance Range Threshold result for HIGH density (ATTACKER TYPE 1)
+            high_density_indexes = highidx
+            high_density_files = list(filter(lambda f: int(re.search(r'\d+', f).group())
+                                             in high_density_indexes, result_files))
+            high_density_files = list(map(lambda f: f'{result_path}{f}', high_density_files))
+            high_data = ArtPeformanceResult(files=high_density_files).run()
+            high_df = pandas.DataFrame.from_dict(high_data, orient='index', columns=['Precision', 'Recall'])
+            high_df.to_csv(f'{result_path}{fh}', index_label='Distance')
+
+        return (low_df, high_df)
+
+    @staticmethod
+    def plot(
+        data: LineChartDict,
+        title1: str,
+        title2: str
+    ):
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(22, 6))
+        ax1.set_title(title1, fontsize=14)
+        ax1.set_xlabel(xlabel='Recall', fontsize=16, labelpad=40)
+        ax1.set_ylabel(ylabel='Precision', fontsize=16, labelpad=30)
+        ax1.set_xlim([0, 1])
+        ax1.set_ylim([0, 1])
+        ax1.grid(True)
+
+        ax2.set_title(title2, fontsize=14)
+        ax2.set_xlabel(xlabel='Recall', fontsize=16, labelpad=40)
+        ax2.set_ylabel(ylabel='Precision', fontsize=16, labelpad=30)
+        ax2.set_xlim([0, 1])
+        ax2.set_ylim([0, 1])
+        ax2.grid(True)
+
+        for density, cdata in data.items():
+            if density is SimulationDensity.LOW:
+                for df, color in cdata:
+                    if df.empty:
+                        continue
+                    ax1.plot(df['Recall'], df['Precision'], color=color, marker='o')
+                    fpos = (df.Recall[0], df.Precision[0])
+                    ax1.annotate(
+                        df.Distance[0],
+                        xy=fpos, xycoords='data', xytext=(-30, -20),
+                        ha='right', va='center', textcoords='offset points',
+                        arrowprops=dict(facecolor=color, shrink=0.05),
+                        fontsize=16, color=color, annotation_clip=False)
+                    lpos = (df.Recall.iloc[-1], df.Precision.iloc[-1])
+                    ax1.annotate(
+                        df.Distance.iloc[-1],
+                        xy=lpos, xycoords='data', xytext=(-30, -20),
+                        ha='right', va='center', textcoords='offset points',
+                        arrowprops=dict(facecolor=color, shrink=0.05),
+                        fontsize=16, color=color, annotation_clip=False)
+            else:
+                for df, color in cdata:
+                    if df.empty:
+                        continue
+                    ax2.plot(df['Recall'], df['Precision'], color=color, marker='o')
+                    fpos = (df.Recall[0], df.Precision[0])
+                    ax2.annotate(
+                        df.Distance[0],
+                        xy=fpos, xycoords='data', xytext=(-30, -20),
+                        ha='right', va='center', textcoords='offset points',
+                        arrowprops=dict(facecolor=color, shrink=0.05),
+                        fontsize=16, color=color, annotation_clip=False)
+                    lpos = (df.Recall.iloc[-1], df.Precision.iloc[-1])
+                    ax2.annotate(
+                        df.Distance.iloc[-1],
+                        xy=lpos, xycoords='data', xytext=(-30, -20),
+                        ha='right', va='center', textcoords='offset points',
+                        arrowprops=dict(facecolor=color, shrink=0.05),
+                        fontsize=16, color=color, annotation_clip=False)
+
+    @ staticmethod
+    def attacker1_result(result_path: str):
+        # Process Acceptance Range Threshold (ART)
+        art_low_df, art_high_df = ArtPeformanceResult.get_result_data(
+            result_path=result_path, fl='art-low-attacker1-result.csv', fh='art-high-attacker1-result.csv',
+            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH)
+
+        # Process Sudden Appearance Warning (SAW)
+        saw_low_df, saw_high_df = pandas.DataFrame(), pandas.DataFrame()
+        # TODO
+
+        # Process Simple Speed Check (SSC)
+        ssc_low_df, ssc_high_df = pandas.DataFrame(), pandas.DataFrame()
+        # TODO
+
+        # Process Distance Moved Verifier (DMV)
+        dmv_low_df, dmv_high_df = pandas.DataFrame(), pandas.DataFrame()
+        # TODO
+
+        ArtPeformanceResult.plot(
+            data={
+                SimulationDensity.LOW: [(art_low_df, 'blue'), (saw_low_df, 'green'),
+                                        (ssc_low_df, 'red'), (dmv_low_df, 'cyan')],
+                SimulationDensity.HIGH: [(art_high_df, 'blue'), (saw_high_df, 'green'),
+                                         (ssc_high_df, 'red'), (dmv_high_df, 'cyan')],
+            },
+            title1='Attacker Type 1 (30.0% Attackers) - Low Density',
+            title2='Attacker Type 1 (30.0% Attackers) - High Density'
+        )

@@ -31,6 +31,7 @@ setup(
         'pandas>=1.4.2',
         'typing_extensions>=4.1.1',
         'scipy>=1.8.0',
-        'ipykernel>=6.13.0'
+        'ipykernel>=6.13.0',
+        'matplotlib>=3.5.1'
     ]
 )
