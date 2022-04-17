@@ -130,23 +130,15 @@ if __name__ == '__main__':
     result_files = [f for f in os.listdir(result_path) if os.path.isfile(f'{result_path}{f}')]
 
     # Process the Acceptance Range Threshold result for low density
-    low_density_indexes = VEHICULAR_LOW_ATTACK1_HIGH + VEHICULAR_HIGH_ATTACK1_HIGH
+    low_density_indexes = VEHICULAR_LOW_ATTACK1_HIGH
     low_density_files = list(filter(lambda f: int(re.search(r'\d+', f).group()) in low_density_indexes, result_files))
     low_density_files = list(map(lambda f: f'{result_path}{f}', low_density_files))
-    # data = ArtPeformanceResult(files=low_density_files).run()
-    data = {
-        100: [0.39656107195414764, 0.9944276815927475],
-        200: [0.4863000965211897, 0.9695957128436878],
-        300: [0.6268035485130837, 0.9219519801289539],
-        400: [0.779058078151856, 0.8691845594531086],
-        450: [0.841305379917564, 0.8531692731913217],
-        500: [0.9007530131611035, 0.8336087121844199],
-        550: [0.9312709848152944, 0.6483475901159054],
-        600: [0.9635600020240427, 0.546957109288018],
-        700: [0.999234939593252, 0.49662843277518964],
-        800: [1.0, 0.4487316615466261]
-    }
+    data = ArtPeformanceResult(files=low_density_files).run()
     df = pandas.DataFrame.from_dict(data, orient='index', columns=['Precision', 'Recall'])
-    # print(df)
-    plt.plot(df['Precision'], df['Recall'], color='red', marker='o')
+    print(df)
+    plt.plot(df['Recall'], df['Precision'], color='blue', marker='o')
+    plt.title('Attacker Type 1 (30.0% Attackers)', fontsize=14)
+    plt.xlabel('Recall', fontsize=16)
+    plt.ylabel('Precision', fontsize=16)
+    plt.grid(True)
     plt.show()
