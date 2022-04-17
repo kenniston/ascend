@@ -53,7 +53,8 @@ class ArtFeature(Feature):
         Required columns in Data Frame:
             - senderPosition        - (x, y, z) tuple
             - receiverPosition      - (x, y, z) tuple
-            - attackerType          - integer for attack type [0 - normal, 1 - attack]
+            - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                               4-attack, 8-attack, 16-attack]
     """
 
     def __init__(self, factory: ArtFeatureParam):
@@ -79,7 +80,8 @@ class ArtFeature(Feature):
         # Check confusion matrix for each distance
         for threshold in params.thresholds:
             df[f'cmtx{threshold}'] = df.apply(lambda row: self.confusion_matrix(
-                row.attackerType == 1, row[f'art{threshold}'] == ResultType.Attack.name).name, axis=1)
+                row.attackerType == 1 or row.attackerType == 2 or row.attackerType == 4 or row.attackerType == 8
+                or row.attackerType == 16, row[f'art{threshold}'] == ResultType.Attack.name).name, axis=1)
 
         # Return result DataFrame
         return FeatureResult(data=df, prefix='art-')

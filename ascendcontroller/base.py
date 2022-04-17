@@ -39,6 +39,7 @@
 import os
 import re
 import errno
+import time
 import pandas
 from enum import Enum
 import multiprocessing as mp
@@ -64,6 +65,7 @@ class FeatureResult(NamedTuple):
     data: pandas.DataFrame
     error: RuntimeError = None
     prefix: str = ''
+    suffix: str = ''
 
 
 class FeatureParam(ABC):
@@ -101,7 +103,7 @@ class Feature(ABC):
             return ConfusionMatrix.FP
 
 
-class CSVRunner:
+class CsvRunner:
     def __init__(
         self, path: str, destination: str, features: Iterable[Feature],
         processes: int = 0, prefix: str = 'result', ext: str = 'csv',
@@ -139,15 +141,22 @@ class CSVRunner:
         # Filter index files
         files = list(filter(lambda f: int(re.search(r'\d+', f).group()) in self.idxfilter, files))
         # Create files Data Frame
-        simulations = pandas.Series(files).reset_index(drop=True)
-        # Process files within workers
-        with mp.Pool(processes=self.processes) as pool:
-            pool.map(self.worker, enumerate(simulations))
+        simulations = pandas.Series(dtype=pandas.StringDtype(), data=files).reset_index(drop=True)
+        if simulations.count() > 0:
+            start_time = time.time()
+            print('Running features...')
+            # Process files within workers
+            with mp.Pool(processes=self.processes) as pool:
+                pool.map(self.worker, enumerate(simulations))
+            elapsed = time.time() - start_time
+            print("Elapsed time: " + time.strftime("%H:%M:%S.{}".format(str(elapsed %
+                  1)[2:])[:15], time.gmtime(elapsed)))
 
     # noinspection PyMethodMayBeStatic
+
     def worker(self, sim):
         idsim, file = sim
-        print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
+        # print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
         data_frame = pandas.read_csv(file)
         # Run all features for each simulation file.
         for feature in self.features:
@@ -160,7 +169,7 @@ class CSVRunner:
                 # If the main data is not empty, save the CSV file.
                 if not result.data.empty:
                     idx = int(re.search(r'\d+', file).group())
-                    output_file = f'{self.destination}{result.prefix}{self.prefix}{idx:03d}.{self.ext}'
+                    output_file = f'{self.destination}{result.prefix}{self.prefix}{idx:03d}{result.suffix}.{self.ext}'
                     result.data.to_csv(output_file)
 
     def create_destination(self):

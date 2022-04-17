@@ -1,78 +1,49 @@
-"""
-    ITA Master Degree
+# ---------------------------------------------------------------------------
+# ASCEND Controller Framework
+#
+# Copyright (c) 2011-2022, ASCEND Controller Development Team
+# Copyright (c) 2011-2022, Open source contributors.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#    1. Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#
+#    2. Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in
+#       the documentation and/or other materials provided with the
+#       distribution.
+#
+#    3. Neither the name of the copyright holder nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# ---------------------------------------------------------------------------
 
-    Veremi Plausibility
-    ===================
-        1. VeReMi: A Dataset for Comparable Evaluationof Misbehavior Detection in VANETs
-
-            Files index by Attack Type, vehicular density and attack density.
-                =============================================================
-                0-44: Type 1 - Constant x=5560, y=5820
-                =============================================================
-                    low     vehicular | low       attack            [0-4]
-                    low     vehicular | medium    attack            [5-9]
-                    low     vehicular | high      attack          [10-14]
-                    medium  vehicular | low       attack          [15-19]
-                    medium  vehicular | medium    attack          [20-24]
-                    medium  vehicular | high      attack          [25-29]
-                    high    vehicular | low       attack          [30-34]
-                    high    vehicular | medium    attack          [35-39]
-                    high    vehicular | high      attack          [40-44]
-                =============================================================
-                45-89: Type 2 - Constante offset Δx=250, Δy=-150
-                =============================================================
-                    low     vehicular | low       attack          [45-49]
-                    low     vehicular | medium    attack          [50-54]
-                    low     vehicular | high      attack          [55-59]
-                    medium  vehicular | low       attack          [60-64]
-                    medium  vehicular | medium    attack          [65-69]
-                    medium  vehicular | high      attack          [70-74]
-                    high    vehicular | low       attack          [75-79]
-                    high    vehicular | medium    attack          [80-84]
-                    high    vehicular | high      attack          [85-89]
-                =============================================================
-                90-134: Type 4 - uniformly random in playground
-                =============================================================
-                    low     vehicular | low       attack          [90-94]
-                    low     vehicular | medium    attack          [95-99]
-                    low     vehicular | high      attack        [100-104]
-                    medium  vehicular | low       attack        [105-109]
-                    medium  vehicular | medium    attack        [110-114]
-                    medium  vehicular | high      attack        [115-119]
-                    high    vehicular | low       attack        [120-124]
-                    high    vehicular | medium    attack        [125-129]
-                    high    vehicular | high      attack        [130-134]
-                =============================================================
-                135-179: Type 8 - Δx,Δy uniformly random from [-300, 300]
-                =============================================================
-                    low     vehicular | low       attack        [135-139]
-                    low     vehicular | medium    attack        [140-144]
-                    low     vehicular | high      attack        [145-149]
-                    medium  vehicular | low       attack        [150-154]
-                    medium  vehicular | medium    attack        [155-159]
-                    medium  vehicular | high      attack        [160-164]
-                    high    vehicular | low       attack        [165-169]
-                    high    vehicular | medium    attack        [170-174]
-                    high    vehicular | high      attack        [175-179]
-                =============================================================
-                180-224: Type 16 - Stop probability += 0.025 each pos update
-                =============================================================
-                    low     vehicular | low       attack        [180-184]
-                    low     vehicular | medium    attack        [185-189]
-                    low     vehicular | high      attack        [190-194]
-                    medium  vehicular | low       attack        [195-199]
-                    medium  vehicular | medium    attack        [200-204]
-                    medium  vehicular | high      attack        [205-209]
-                    high    vehicular | low       attack        [210-214]
-                    high    vehicular | medium    attack        [215-219]
-                    high    vehicular | high      attack        [220-224]
-                =============================================================
-
-"""
-
+import os
+import re
 import pandas
-from ascendcontroller.base import CSVRunner, FeatureParam, Feature, FeatureResult
+from typing import Sequence
+import matplotlib.pyplot as plt
+from ascendcontroller.veremi import *
 from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
+from ascendcontroller.base import CsvRunner, FeatureParam, Feature, FeatureResult
 
 
 class ArtParam(ArtFeatureParam):
@@ -102,12 +73,34 @@ class ArtParam(ArtFeatureParam):
         return param
 
 
-class DMVParam(FeatureParam):
+class ArtPeformanceResult:
+    """ ArtPeformanceResult reads Acceptance Range Threshold and plots a graphs
+        with precision and recal values.
+    """
+
+    def __init__(self, files: Sequence):
+        self.files = files
+        self.thresholds = [100, 200, 300, 400, 450, 500, 550, 600, 700, 800]
+
+    def run(self) -> Sequence:
+        print('loading files...')
+        df = pandas.concat([pandas.read_csv(f) for f in self.files])
+        values = {}
+        for threshold in self.thresholds:
+            # Calculate the precision and recall
+            counts = df[f'cmtx{threshold}'].value_counts()
+            precision = getattr(counts, 'TP', 0) / (getattr(counts, 'TP', 0) + getattr(counts, 'FP', 0))
+            recall = getattr(counts, 'TP', 0) / (getattr(counts, 'TP', 0) + getattr(counts, 'FN', 0))
+            values[threshold] = [precision, recall]
+        return values
+
+
+class DmvParam(FeatureParam):
     def build(data: pandas.DataFrame):
         pass
 
 
-class DMVFeature(Feature):
+class DmvFeature(Feature):
     def __init__(self, factory: FeatureParam):
         super().__init__(factory)
 
@@ -118,15 +111,42 @@ class DMVFeature(Feature):
 
 if __name__ == '__main__':
     root_path = "/home/kenniston/mestrado-ita/materiais/SBSeg/projetos/dataset-veremi/simulationscsv2"
+    result_path = f'{root_path}/result-plausibility/'
 
     # VeReMi Misbehavior file filter
-    filter = [*range(10, 15)] + [*range(40, 45)] + [*range(55, 60)] + \
-             [*range(85, 90)] + [*range(100, 105)] + [*range(130, 135)] + \
-             [*range(145, 150)] + [*range(175, 180)]
+    file_filter = VEHICULAR_LOW_ATTACK1_HIGH + VEHICULAR_HIGH_ATTACK1_HIGH + \
+        VEHICULAR_LOW_ATTACK2_HIGH + VEHICULAR_HIGH_ATTACK2_HIGH + \
+        VEHICULAR_LOW_ATTACK4_HIGH + VEHICULAR_HIGH_ATTACK4_HIGH + \
+        VEHICULAR_LOW_ATTACK8_HIGH + VEHICULAR_HIGH_ATTACK8_HIGH
 
-    CSVRunner(
+    CsvRunner(
         path=root_path,
-        destination=f'{root_path}/result-plausibility/',
+        destination=result_path,
         features=[ArtFeature(factory=ArtParam)],
-        idxfilter=filter
+        idxfilter=file_filter
     ).process()
+
+    # Process result files
+    result_files = [f for f in os.listdir(result_path) if os.path.isfile(f'{result_path}{f}')]
+
+    # Process the Acceptance Range Threshold result for low density
+    low_density_indexes = VEHICULAR_LOW_ATTACK1_HIGH + VEHICULAR_HIGH_ATTACK1_HIGH
+    low_density_files = list(filter(lambda f: int(re.search(r'\d+', f).group()) in low_density_indexes, result_files))
+    low_density_files = list(map(lambda f: f'{result_path}{f}', low_density_files))
+    # data = ArtPeformanceResult(files=low_density_files).run()
+    data = {
+        100: [0.39656107195414764, 0.9944276815927475],
+        200: [0.4863000965211897, 0.9695957128436878],
+        300: [0.6268035485130837, 0.9219519801289539],
+        400: [0.779058078151856, 0.8691845594531086],
+        450: [0.841305379917564, 0.8531692731913217],
+        500: [0.9007530131611035, 0.8336087121844199],
+        550: [0.9312709848152944, 0.6483475901159054],
+        600: [0.9635600020240427, 0.546957109288018],
+        700: [0.999234939593252, 0.49662843277518964],
+        800: [1.0, 0.4487316615466261]
+    }
+    df = pandas.DataFrame.from_dict(data, orient='index', columns=['Precision', 'Recall'])
+    # print(df)
+    plt.plot(df['Precision'], df['Recall'], color='red', marker='o')
+    plt.show()
