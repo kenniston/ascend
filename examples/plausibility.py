@@ -36,14 +36,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # ---------------------------------------------------------------------------
 
-import os
-import re
+from ascendcontroller.features.dmv import DmvFeature, DmvFeatureParam
 import pandas
-from typing import Sequence
-import matplotlib.pyplot as plt
 from ascendcontroller.veremi import *
 from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
-from ascendcontroller.base import CsvRunner, FeatureParam, Feature, FeatureResult
+from ascendcontroller.base import CsvRunner
 
 
 class ArtParam(ArtFeatureParam):
@@ -51,7 +48,8 @@ class ArtParam(ArtFeatureParam):
 
         - senderPosition        - (x, y, z) tuple
         - receiverPosition      - (x, y, z) tuple
-        - attackerType          - integer for attack type [0 - normal, 1 - attack]
+        - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                           4-attack, 8-attack, 16-attack]
     """
     def build(data: pandas.DataFrame):
         param = ArtParam()
@@ -73,18 +71,31 @@ class ArtParam(ArtFeatureParam):
         return param
 
 
-class DmvParam(FeatureParam):
+class DmvParam(DmvFeatureParam):
+    """ DmvFeature requires a specific Data Frame with the following columns:
+
+        - sender                - sender ID
+        - senderPosition        - (x, y, z) tuple
+        - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                           4-attack, 8-attack, 16-attack]
+    """
     def build(data: pandas.DataFrame):
-        pass
+        param = DmvParam()
+        # Configure the Thresolds for Distance Moved Verifier
+        param.thresholds = [1, 5, 10, 15, 20, 25]
 
+        # Create the required columns for the feature
+        data['senderPosition'] = data.apply(lambda row: (row.pxSnd, row.pySnd, row.pzSnd), axis=1)
+        data['messageID'] = data.apply(lambda row: int(row.messageID), axis=1)
+        data['sender'] = data.apply(lambda row: int(row.sender), axis=1)
 
-class DmvFeature(Feature):
-    def __init__(self, factory: FeatureParam):
-        super().__init__(factory)
+        # Drop unnecessary columns from Data Frame
+        data = data.drop(columns=['Unnamed: 0', 'sendTime', 'gpsTime', 'rcvTime', 'pxSnd', 'pySnd',
+                                  'pzSnd', 'sxSnd', 'sySnd', 'szSnd', 'pxRcv', 'pyRcv', 'pzRcv',
+                                  'sxRcv', 'syRcv', 'szRcv'])
 
-    def process(self, data: pandas.DataFrame) -> FeatureResult:
-        params = self.factory.build(data)
-        return FeatureResult()
+        param.data = data
+        return param
 
 
 def process(root_path: str, result_path: str):
@@ -97,17 +108,17 @@ def process(root_path: str, result_path: str):
     CsvRunner(
         path=root_path,
         destination=result_path,
-        features=[ArtFeature(factory=ArtParam)],
-        idxfilter=file_filter
+        features=[DmvFeature(factory=DmvParam)],
+        idxfilter=file_filter,
     ).process()
 
 
 if __name__ == '__main__':
     root_path = "/home/kenniston/mestrado-ita/materiais/SBSeg/projetos/dataset-veremi/simulationscsv2"
-    result_path = f'{root_path}/result-plausibility/'
+    result_path = f'{root_path}/result-plausibility-dmv/'
 
     # Process files from root path
     process(root_path, result_path)
 
     # Result for Attacker Type 1
-    ArtPeformanceResult.attacker1_result(result_path)
+    PeformanceResult.attacker1_result(result_path)

@@ -153,7 +153,6 @@ class CsvRunner:
                   1)[2:])[:15], time.gmtime(elapsed)))
 
     # noinspection PyMethodMayBeStatic
-
     def worker(self, sim):
         idsim, file = sim
         # print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
