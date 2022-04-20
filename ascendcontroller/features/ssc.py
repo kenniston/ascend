@@ -41,3 +41,29 @@ from abc import ABC
 from typing import Sequence
 from scipy.spatial import distance
 from ascendcontroller.base import Feature, FeatureResult, ResultType, FeatureParam
+
+
+class SccFeatureParam(FeatureParam, ABC):
+    # List of max speed deviation (m/s) Detector
+    thresholds: Sequence[int]
+
+
+class SccFeature(Feature):
+    """
+        Required columns in Data Frame:
+            - sender                - sender ID
+            - senderPosition        - (x, y, z) tuple
+            - senderPrevPosition    - (x, y, z) tuple
+            - rcvTime               - Message arrival time
+            - rcvPrevTime           - Message arrival time
+            - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                               4-attack, 8-attack, 16-attack]
+    """
+
+    def __init__(self, factory: SccFeatureParam):
+        super().__init__(factory=factory)
+
+    # noinspection PyMethodMayBeStatic
+    def process(self, data: pandas.DataFrame) -> FeatureResult:
+        params: SccFeatureParam = self.factory.build(data)
+        df = params.data
