@@ -76,6 +76,7 @@ class DmvParam(DmvFeatureParam):
 
         - sender                - sender ID
         - senderPosition        - (x, y, z) tuple
+        - rcvTime               - Message arrival time
         - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
                                                            4-attack, 8-attack, 16-attack]
     """
@@ -90,7 +91,7 @@ class DmvParam(DmvFeatureParam):
         data['sender'] = data.apply(lambda row: int(row.sender), axis=1)
 
         # Drop unnecessary columns from Data Frame
-        data = data.drop(columns=['Unnamed: 0', 'sendTime', 'gpsTime', 'rcvTime', 'pxSnd', 'pySnd',
+        data = data.drop(columns=['Unnamed: 0', 'sendTime', 'gpsTime', 'pxSnd', 'pySnd',
                                   'pzSnd', 'sxSnd', 'sySnd', 'szSnd', 'pxRcv', 'pyRcv', 'pzRcv',
                                   'sxRcv', 'syRcv', 'szRcv'])
 
@@ -115,7 +116,7 @@ def process(root_path: str, result_path: str):
 
 if __name__ == '__main__':
     root_path = "/home/kenniston/mestrado-ita/materiais/SBSeg/projetos/dataset-veremi/simulationscsv2"
-    result_path = f'{root_path}/result-plausibility-dmv/'
+    result_path = f'{root_path}/result-plausibility/'
 
     # Process files from root path
     process(root_path, result_path)
