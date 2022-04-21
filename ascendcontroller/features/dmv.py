@@ -95,7 +95,7 @@ class DmvFeature(Feature):
             selection = df[['idx', 'rcvTime', 'senderPosition']].loc[df.sender == s].values.tolist()
             for seq, data in enumerate(selection):
                 idx, curr_time, curr_pos = data
-                for threshold in [1, 5, 10, 15, 20, 25]:
+                for threshold in params.thresholds:
                     if seq == 0:
                         df.iloc[idx, df.columns.get_loc(f'dmv{threshold}')] = ResultType.Normal.name
                         continue

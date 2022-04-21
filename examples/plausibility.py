@@ -36,11 +36,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # ---------------------------------------------------------------------------
 
-from ascendcontroller.features.dmv import DmvFeature, DmvFeatureParam
 import pandas
 from ascendcontroller.veremi import *
-from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
 from ascendcontroller.base import CsvRunner
+from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
+from ascendcontroller.features.dmv import DmvFeature, DmvFeatureParam
+from ascendcontroller.features.ssc import SscFeature, SscFeatureParam
 
 
 class ArtParam(ArtFeatureParam):
@@ -99,6 +100,36 @@ class DmvParam(DmvFeatureParam):
         return param
 
 
+class SscParam(SscFeatureParam):
+    """ SscFeature requires a specific Data Frame with the following columns:
+
+        - sender                - sender ID
+        - senderPosition        - (x, y, z) tuple
+        - senderSpeed           - (x, y, z) tuple
+        - rcvTime               - Message arrival time
+        - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                           4-attack, 8-attack, 16-attack]
+    """
+    def build(data: pandas.DataFrame):
+        param = SscParam()
+        # Configure the Thresolds for Distance Moved Verifier
+        param.thresholds = [2.5, 5, 7.5, 10, 15, 20, 25]
+
+        # Create the required columns for the feature
+        data['senderPosition'] = data.apply(lambda row: (row.pxSnd, row.pySnd, row.pzSnd), axis=1)
+        data['senderSpeed'] = data.apply(lambda row: (row.sxSnd, row.sySnd, row.szSnd), axis=1)
+        data['messageID'] = data.apply(lambda row: int(row.messageID), axis=1)
+        data['sender'] = data.apply(lambda row: int(row.sender), axis=1)
+
+        # Drop unnecessary columns from Data Frame
+        data = data.drop(columns=['Unnamed: 0', 'sendTime', 'gpsTime', 'pxSnd', 'pySnd',
+                                  'pzSnd', 'sxSnd', 'sySnd', 'szSnd', 'pxRcv', 'pyRcv', 'pzRcv',
+                                  'sxRcv', 'syRcv', 'szRcv'])
+
+        param.data = data
+        return param
+
+
 def process(root_path: str, result_path: str):
     # VeReMi Misbehavior file filter
     file_filter = VEHICULAR_LOW_ATTACK1_HIGH + VEHICULAR_HIGH_ATTACK1_HIGH + \
@@ -109,7 +140,7 @@ def process(root_path: str, result_path: str):
     CsvRunner(
         path=root_path,
         destination=result_path,
-        features=[DmvFeature(factory=DmvParam)],
+        features=[DmvFeature(factory=SscParam)],
         idxfilter=file_filter,
     ).process()
 
