@@ -81,6 +81,11 @@ Environment, run the following command from root directory:
 pip install .
 ```
 
+***To install the development version use the following command:***
+```shell
+pip install -e .
+```
+
  ## How to develop
 
  To create a new feature extends the ***controller.base.Feature*** 

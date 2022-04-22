@@ -210,7 +210,7 @@ class PeformanceResult:
             # Process result files
             result_files = [f for f in os.listdir(result_path) if os.path.isfile(f'{result_path}{f}')]
 
-            # Process the Acceptance Range Threshold result for LOW density (ATTACKER TYPE 1)
+            # Process the results for LOW density
             low_density_indexes = lowidx
             low_density_files = list(filter(lambda f: int(re.search(r'\d+', f).group())
                                             in low_density_indexes, result_files))
@@ -218,8 +218,9 @@ class PeformanceResult:
             low_data = PeformanceResult.run(ctype=ctype, files=low_density_files)
             low_df = pandas.DataFrame.from_dict(low_data, orient='index', columns=['Precision', 'Recall'])
             low_df.to_csv(f'{result_path}{fl}', index_label='Distance')
+            low_df['Distance'] = list(low_data.keys())
 
-            # Process the Acceptance Range Threshold result for HIGH density (ATTACKER TYPE 1)
+            # Process the results for HIGH density
             high_density_indexes = highidx
             high_density_files = list(filter(lambda f: int(re.search(r'\d+', f).group())
                                              in high_density_indexes, result_files))
@@ -227,8 +228,7 @@ class PeformanceResult:
             high_data = PeformanceResult.run(ctype=ctype, files=high_density_files)
             high_df = pandas.DataFrame.from_dict(high_data, orient='index', columns=['Precision', 'Recall'])
             high_df.to_csv(f'{result_path}{fh}', index_label='Distance')
-
-        # TODO: ADD INDEX_LABEL for the first time
+            high_df['Distance'] = list(high_data.keys())
 
         return (low_df, high_df)
 
@@ -307,7 +307,9 @@ class PeformanceResult:
         # TODO
 
         # Process Simple Speed Check (SSC)
-        ssc_low_df, ssc_high_df = pandas.DataFrame(), pandas.DataFrame()
+        ssc_low_df, ssc_high_df = PeformanceResult.get_result_data(
+            result_path=f'{path}-ssc/', fl='ssc-low-attacker1-result.csv', fh='ssc-high-attacker1-result.csv',
+            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.ART)
         # TODO
 
         # Process Distance Moved Verifier (DMV)
