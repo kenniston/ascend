@@ -145,12 +145,14 @@ class CsvRunner:
         if simulations.count() > 0:
             start_time = time.time()
             print('Running features...')
+            print("Start time: " + time.strftime("%H:%M:%S.{}".format(str(start_time %
+                  1)[2:])[:15], time.localtime(start_time)))
             # Process files within workers
             with mp.Pool(processes=self.processes) as pool:
                 pool.map(self.worker, enumerate(simulations))
             elapsed = time.time() - start_time
             print("Elapsed time: " + time.strftime("%H:%M:%S.{}".format(str(elapsed %
-                  1)[2:])[:15], time.gmtime(elapsed)))
+                  1)[2:])[:15], time.localtime(elapsed)))
 
     # noinspection PyMethodMayBeStatic
     def worker(self, sim):

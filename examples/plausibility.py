@@ -140,8 +140,9 @@ def process(root_path: str, result_path: str):
     CsvRunner(
         path=root_path,
         destination=result_path,
-        features=[DmvFeature(factory=SscParam)],
+        features=[SscFeature(factory=SscParam)],
         idxfilter=file_filter,
+        processes=1,
     ).process()
 
 

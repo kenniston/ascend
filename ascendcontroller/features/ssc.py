@@ -38,7 +38,8 @@
 
 import pandas
 from abc import ABC
-from typing import Sequence
+from math import sqrt
+from typing import Sequence, Tuple
 from scipy.spatial import distance
 from ascendcontroller.base import Feature, FeatureResult, ResultType, FeatureParam
 
@@ -55,20 +56,36 @@ class SscFeature(Feature):
             - senderPosition        - (x, y, z) tuple
             - senderSpeed           - (x, y, z) tuple
             - rcvTime               - Message arrival time
-            - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+            - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack,
                                                                4-attack, 8-attack, 16-attack]
     """
 
     def __init__(self, factory: SscFeatureParam):
         super().__init__(factory=factory)
 
+    def check_speed(self, threshold: float, curr: pandas.Series, prev: pandas.Series) -> Tuple[int, ResultType]:
+        if prev is None or curr.sender != prev.sender:
+            return (-1, ResultType.Normal.name)
+        curr_time = curr['rcvTime']
+        prev_time = prev['rcvTime']
+        curr_pos = curr['senderPosition']
+        prev_pos = prev['rcvTime']
+        curr_speed = curr['senderSpeed']
+        time_diff = curr_time - prev_time
+        dist_diff = distance.euclidean(curr_pos, prev_pos)
+        actual_speed = dist_diff / 1 if time_diff == 0 else time_diff  # v = s/t
+        last_speed = sqrt(pow(curr_speed[0], 2) + pow(curr_speed[1], 2) + pow(curr_speed[2], 2))
+        delta_speed = abs(last_speed - actual_speed)
+        return (delta_speed, ResultType.Normal.name if delta_speed > threshold else ResultType.Normal.Attack.name)
+
     # noinspection PyMethodMayBeStatic
+
     def process(self, data: pandas.DataFrame) -> FeatureResult:
         params: SscFeatureParam = self.factory.build(data)
         df = params.data
 
         # Create a index Column
-        df['idx'] = list(range(len(df.index)))
+        # df['idx'] = list(range(len(df.index)))
 
         # Create ssc Columns in the Data Frame
         for threshold in params.thresholds:
@@ -76,32 +93,24 @@ class SscFeature(Feature):
         for threshold in params.thresholds:
             df[f'cmtx{threshold}'] = 'Unknown'
 
+        # Sort the Data Frame by Sender Column
+        df = df.sort_values('sender', ignore_index=True)
+
         # Calculate actual speed
-        for s in df.sender.unique():
-            selection = df[['idx', 'rcvTime', 'senderPosition', 'senderSpeed']].loc[df.sender == s].values.tolist()
-            prev = None
-            for seq, data in enumerate(selection):
-                idx, curr_time, curr_pos, curr_speed = data
-                for threshold in params.thresholds:
-                    if seq == 0:
-                        df.iloc[idx, df.columns.get_loc(f'ssc{threshold}')] = ResultType.Normal.name
-                        prev = data
-                        continue
+        for idx in range(0, len(df)):
+            for threshold in params.thresholds:
+                curr = df.loc[idx]
+                prev = df.loc[idx-1] if idx > 0 else None
+                attacker = curr.attackerType.item()
+                speed, result = self.check_speed(threshold, curr, prev)
+                df.loc[idx, f'speed'] = speed
+                df.loc[idx, f'ssc{threshold}'] = result
+                df.loc[idx, f'cmtx{threshold}'] = self.confusion_matrix(
+                    attacker == 1 or attacker == 2 or attacker == 4 or attacker == 8
+                    or attacker == 16, result == ResultType.Attack.name).name
 
-                _, prev_time, prev_pos, _ = prev
-                time_diff = curr_time - prev_time
-                dist_diff = distance.euclidean(curr_pos, prev_pos)
-                actual_speed = dist_diff / time_diff  # v = s/t
-                delta_speed = abs(curr_speed - actual_speed)
-                df.iloc[idx, df.columns.get_loc(
-                    f'ssc{threshold}')] = ResultType.Normal.name if delta_speed < threshold else ResultType.Normal.Attack
-                prev = data
-
-        # Check confusion matrix for each distance
-        for threshold in params.thresholds:
-            df[f'cmtx{threshold}'] = df.apply(lambda row: self.confusion_matrix(
-                row.attackerType == 1 or row.attackerType == 2 or row.attackerType == 4 or row.attackerType == 8
-                or row.attackerType == 16, row[f'ssc{threshold}'] == ResultType.Attack.name).name, axis=1)
+        # Drop unnecessary columns from Data Frame
+        df = df.drop(columns=['senderPosition', 'senderSpeed', 'rcvTime'])
 
         # Return result DataFrame
         return FeatureResult(data=df, prefix='ssc-')
