@@ -32,6 +32,8 @@ setup(
         'typing_extensions>=4.1.1',
         'scipy>=1.8.0',
         'ipykernel>=6.13.0',
-        'matplotlib>=3.5.1'
-    ]
+        'matplotlib>=3.5.1',
+        'jpype1>=1.3.0'
+    ],
+    include_package_data=True
 )

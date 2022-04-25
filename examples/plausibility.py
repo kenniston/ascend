@@ -113,7 +113,7 @@ class SscParam(SscFeatureParam):
     def build(data: pandas.DataFrame):
         param = SscParam()
         # Configure the Thresolds for Distance Moved Verifier
-        param.thresholds = [2.5, 5, 7.5, 10, 15, 20, 25]
+        param.thresholds = [35, 40, 45, 50, 60, 70, 80]  # [5, 10, 15, 20, 30, 40, 50]  # [2.5, 5, 7.5, 10, 15, 20, 25]
 
         # Create the required columns for the feature
         data['senderPosition'] = data.apply(lambda row: (row.pxSnd, row.pySnd, row.pzSnd), axis=1)

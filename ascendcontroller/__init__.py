@@ -42,6 +42,7 @@ More information is available at https://ita.br
 """
 
 import sys
+from pathlib import Path
 
 if sys.version_info < (3, 6):
     raise Exception('ascend-controller %s requires Python 3.6 or newer.' % version)

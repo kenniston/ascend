@@ -152,26 +152,29 @@ class CsvRunner:
                 pool.map(self.worker, enumerate(simulations))
             elapsed = time.time() - start_time
             print("Elapsed time: " + time.strftime("%H:%M:%S.{}".format(str(elapsed %
-                  1)[2:])[:15], time.localtime(elapsed)))
+                  1)[2:])[:15], time.gmtime(elapsed)))
 
     # noinspection PyMethodMayBeStatic
     def worker(self, sim):
-        idsim, file = sim
-        # print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
-        data_frame = pandas.read_csv(file)
-        # Run all features for each simulation file.
-        for feature in self.features:
-            result: FeatureResult = feature.process(data_frame)
-            # Check for current feature output error
-            if result.error is not None:
-                print(f'Error processing {file} on feature {feature}. Error: {result.error}')
-                continue
-            else:
-                # If the main data is not empty, save the CSV file.
-                if not result.data.empty:
-                    idx = int(re.search(r'\d+', file).group())
-                    output_file = f'{self.destination}{result.prefix}{self.prefix}{idx:03d}{result.suffix}.{self.ext}'
-                    result.data.to_csv(output_file)
+        try:
+            idsim, file = sim
+            # print(f'Processing file {file} on Thread "{mp.current_process().name}"...')
+            data_frame = pandas.read_csv(file)
+            # Run all features for each simulation file.
+            for feature in self.features:
+                result: FeatureResult = feature.process(data_frame)
+                # Check for current feature output error
+                if result.error is not None:
+                    print(f'Error processing {file} on feature {feature}. Error: {result.error}')
+                    continue
+                else:
+                    # If the main data is not empty, save the CSV file.
+                    if not result.data.empty:
+                        idx = int(re.search(r'\d+', file).group())
+                        output_file = f'{self.destination}{result.prefix}{self.prefix}{idx:03d}{result.suffix}.{self.ext}'
+                        result.data.to_csv(output_file)
+        except Exception as e:
+            print(e)
 
     def create_destination(self):
         dest = self.destination

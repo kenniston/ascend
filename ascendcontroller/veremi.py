@@ -167,7 +167,7 @@ class PeformanceResult:
     """
     thresholds = [100, 200, 300, 400, 450, 500, 550, 600, 700, 800]
     thresholds_saw = [25, 100, 200]
-    thresholds_ssc = [2.5, 5, 7.5, 10, 15, 20, 25]
+    thresholds_ssc = [5, 10, 15, 20, 30, 40, 50]  # [2.5, 5, 7.5, 10, 15, 20, 25]
     thresholds_dmv = [1, 5, 10, 15, 20, 25]
 
     @staticmethod
@@ -219,6 +219,7 @@ class PeformanceResult:
             low_df = pandas.DataFrame.from_dict(low_data, orient='index', columns=['Precision', 'Recall'])
             low_df.to_csv(f'{result_path}{fl}', index_label='Distance')
             low_df['Distance'] = list(low_data.keys())
+            low_df = low_df.reset_index(drop=True)
 
             # Process the results for HIGH density
             high_density_indexes = highidx
@@ -229,6 +230,7 @@ class PeformanceResult:
             high_df = pandas.DataFrame.from_dict(high_data, orient='index', columns=['Precision', 'Recall'])
             high_df.to_csv(f'{result_path}{fh}', index_label='Distance')
             high_df['Distance'] = list(high_data.keys())
+            high_df = high_df.reset_index(drop=True)
 
         return (low_df, high_df)
 
@@ -309,8 +311,7 @@ class PeformanceResult:
         # Process Simple Speed Check (SSC)
         ssc_low_df, ssc_high_df = PeformanceResult.get_result_data(
             result_path=f'{path}-ssc/', fl='ssc-low-attacker1-result.csv', fh='ssc-high-attacker1-result.csv',
-            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.ART)
-        # TODO
+            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.SSC)
 
         # Process Distance Moved Verifier (DMV)
         dmv_low_df, dmv_high_df = PeformanceResult.get_result_data(
