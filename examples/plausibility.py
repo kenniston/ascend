@@ -114,7 +114,7 @@ class SscParam(SscFeatureParam):
     def build(data: pandas.DataFrame):
         param = SscParam()
         # Configure the Thresolds for Distance Moved Verifier
-        param.thresholds = [35, 40, 45, 50, 60, 70, 80]  # [5, 10, 15, 20, 30, 40, 50]  # [2.5, 5, 7.5, 10, 15, 20, 25]
+        param.thresholds = [2.5, 5, 7.5, 10, 15, 20, 25]  # [35, 40, 45, 50, 60, 70, 80] # [5, 10, 15, 20, 30, 40, 50]
 
         # Create the required columns for the feature
         data['senderPosition'] = data.apply(lambda row: (row.pxSnd, row.pySnd, row.pzSnd), axis=1)
@@ -164,12 +164,13 @@ def process(root_path: str, result_path: str):
     file_filter = VEHICULAR_LOW_ATTACK1_HIGH + VEHICULAR_HIGH_ATTACK1_HIGH + \
         VEHICULAR_LOW_ATTACK2_HIGH + VEHICULAR_HIGH_ATTACK2_HIGH + \
         VEHICULAR_LOW_ATTACK4_HIGH + VEHICULAR_HIGH_ATTACK4_HIGH + \
-        VEHICULAR_LOW_ATTACK8_HIGH + VEHICULAR_HIGH_ATTACK8_HIGH
+        VEHICULAR_LOW_ATTACK8_HIGH + VEHICULAR_HIGH_ATTACK8_HIGH + \
+        VEHICULAR_LOW_ATTACK16_HIGH + VEHICULAR_HIGH_ATTACK16_HIGH
 
     CsvRunner(
         path=root_path,
         destination=result_path,
-        features=[SawFeature(factory=SawParam)],
+        features=[SscFeature(factory=SscParam)],
         idxfilter=file_filter,
         # processes=1,
     ).process()
@@ -182,5 +183,9 @@ if __name__ == '__main__':
     # Process files from root path
     process(root_path, result_path)
 
-    # Result for Attacker Type 1
-    PeformanceResult.attacker1_result(result_path)
+    # Result for Attackers
+    # PeformanceResult.attacker_result(result_path, AttackType.TYPE1)
+    # PeformanceResult.attacker_result(result_path, AttackType.TYPE2)
+    # PeformanceResult.attacker_result(result_path, AttackType.TYPE4)
+    # PeformanceResult.attacker_result(result_path, AttackType.TYPE8)
+    # PeformanceResult.attacker_result(result_path, AttackType.TYPE16)

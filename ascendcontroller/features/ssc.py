@@ -148,8 +148,8 @@ class SscFeature(Feature):
                 df.loc[idx, f'cmtx{threshold}'] = self.confusion_matrix(
                     attacker == 1 or attacker == 2 or attacker == 4 or attacker == 8
                     or attacker == 16, result == ResultType.Attack.name).name
-                df.loc[idx, f'deltaSpeed'] = speed
-                df.loc[idx, f'subj{threshold}'] = opinion_exp
+                df.loc[idx, f'speed'] = speed
+                # df.loc[idx, f'subj{threshold}'] = opinion_exp
 
         # Drop unnecessary columns from Data Frame
         df = df.drop(columns=['senderPosition', 'senderSpeed', 'rcvTime'])

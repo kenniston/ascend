@@ -115,23 +115,23 @@ from typing import Dict, Sequence, Tuple
 
 
 class SimulationDensity(Enum):
-    LOW = 1,
-    MEDIUM = 2,
+    LOW = 1
+    MEDIUM = 2
     HIGH = 3
 
 
 class AttackType(Enum):
-    TYPE1 = 1,
-    TYPE2 = 2,
-    TYPE4 = 4,
-    TYPE8 = 8,
-    TYPE16 = 16,
+    TYPE1 = 1
+    TYPE2 = 2
+    TYPE4 = 4
+    TYPE8 = 8
+    TYPE16 = 16
 
 
 class ChartFeature(Enum):
-    ART = 1,
-    SAW = 2.
-    SSC = 3,
+    ART = 1
+    SAW = 2
+    SSC = 3
     DMV = 4
 
 
@@ -167,7 +167,7 @@ class PeformanceResult:
     """
     thresholds = [100, 200, 300, 400, 450, 500, 550, 600, 700, 800]
     thresholds_saw = [25, 100, 200]
-    thresholds_ssc = [35, 40, 45, 50, 60, 70, 80]  # [5, 10, 15, 20, 30, 40, 50]  # [2.5, 5, 7.5, 10, 15, 20, 25]
+    thresholds_ssc = [2.5, 5, 7.5, 10, 15, 20, 25]  # [35, 40, 45, 50, 60, 70, 80]  # [5, 10, 15, 20, 30, 40, 50]
     thresholds_dmv = [1, 5, 10, 15, 20, 25]
 
     @staticmethod
@@ -297,27 +297,46 @@ class PeformanceResult:
         plt.show()
 
     @staticmethod
-    def attacker1_result(result_path: str):
+    def attacker_result(result_path: str, type: AttackType):
         path = result_path.removesuffix(os.path.sep)
+
+        lowidx = None
+        highidx = None
+        if type is AttackType.TYPE1:
+            lowidx = VEHICULAR_LOW_ATTACK1_HIGH
+            highidx = VEHICULAR_HIGH_ATTACK1_HIGH
+        elif type is AttackType.TYPE2:
+            lowidx = VEHICULAR_LOW_ATTACK2_HIGH
+            highidx = VEHICULAR_HIGH_ATTACK2_HIGH
+        elif type is AttackType.TYPE4:
+            lowidx = VEHICULAR_LOW_ATTACK4_HIGH
+            highidx = VEHICULAR_HIGH_ATTACK4_HIGH
+        elif type is AttackType.TYPE8:
+            lowidx = VEHICULAR_LOW_ATTACK8_HIGH
+            highidx = VEHICULAR_HIGH_ATTACK8_HIGH
+        elif type is AttackType.TYPE16:
+            lowidx = VEHICULAR_LOW_ATTACK16_HIGH
+            highidx = VEHICULAR_HIGH_ATTACK16_HIGH
+
         # Process Acceptance Range Threshold (ART)
         art_low_df, art_high_df = PeformanceResult.get_result_data(
-            result_path=f'{path}-art/', fl='art-low-attacker1-result.csv', fh='art-high-attacker1-result.csv',
-            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.ART)
+            result_path=f'{path}-art/', fl=f'art-low-attacker{type.value}-result.csv',
+            fh=f'art-high-attacker{type.value}-result.csv', lowidx=lowidx, highidx=highidx, ctype=ChartFeature.ART)
 
         # Process Sudden Appearance Warning (SAW)
         saw_low_df, saw_high_df = PeformanceResult.get_result_data(
-            result_path=f'{path}-saw/', fl='art-low-attacker1-result.csv', fh='art-high-attacker1-result.csv',
-            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.SAW)
+            result_path=f'{path}-saw/', fl=f'art-low-attacker{type.value}-result.csv',
+            fh=f'art-high-attacker{type.value}-result.csv', lowidx=lowidx, highidx=highidx, ctype=ChartFeature.SAW)
 
         # Process Simple Speed Check (SSC)
         ssc_low_df, ssc_high_df = PeformanceResult.get_result_data(
-            result_path=f'{path}-ssc/', fl='ssc-low-attacker1-result.csv', fh='ssc-high-attacker1-result.csv',
-            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.SSC)
+            result_path=f'{path}-ssc/', fl=f'ssc-low-attacker{type.value}-result.csv',
+            fh=f'ssc-high-attacker{type.value}-result.csv', lowidx=lowidx, highidx=highidx, ctype=ChartFeature.SSC)
 
         # Process Distance Moved Verifier (DMV)
         dmv_low_df, dmv_high_df = PeformanceResult.get_result_data(
-            result_path=f'{path}-dmv/', fl='dmv-low-attacker1-result.csv', fh='dmv-high-attacker1-result.csv',
-            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.DMV)
+            result_path=f'{path}-dmv/', fl=f'dmv-low-attacker{type.value}-result.csv',
+            fh=f'dmv-high-attacker{type.value}-result.csv', lowidx=lowidx, highidx=highidx, ctype=ChartFeature.DMV)
 
         PeformanceResult.plot(
             data={
@@ -326,6 +345,6 @@ class PeformanceResult:
                 SimulationDensity.HIGH: [(art_high_df, 'blue'), (saw_high_df, 'green'),
                                          (ssc_high_df, 'red'), (dmv_high_df, 'cyan')],
             },
-            title1='Attacker Type 1 (30.0% Attackers) - Low Density',
-            title2='Attacker Type 1 (30.0% Attackers) - High Density'
+            title1=f'Attacker Type {type.value} (30.0% Attackers) - Low Density',
+            title2=f'Attacker Type {type.value} (30.0% Attackers) - High Density'
         )
