@@ -167,7 +167,7 @@ class PeformanceResult:
     """
     thresholds = [100, 200, 300, 400, 450, 500, 550, 600, 700, 800]
     thresholds_saw = [25, 100, 200]
-    thresholds_ssc = [5, 10, 15, 20, 30, 40, 50]  # [2.5, 5, 7.5, 10, 15, 20, 25]
+    thresholds_ssc = [35, 40, 45, 50, 60, 70, 80]  # [5, 10, 15, 20, 30, 40, 50]  # [2.5, 5, 7.5, 10, 15, 20, 25]
     thresholds_dmv = [1, 5, 10, 15, 20, 25]
 
     @staticmethod
@@ -305,8 +305,9 @@ class PeformanceResult:
             lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.ART)
 
         # Process Sudden Appearance Warning (SAW)
-        saw_low_df, saw_high_df = pandas.DataFrame(), pandas.DataFrame()
-        # TODO
+        saw_low_df, saw_high_df = PeformanceResult.get_result_data(
+            result_path=f'{path}-saw/', fl='art-low-attacker1-result.csv', fh='art-high-attacker1-result.csv',
+            lowidx=VEHICULAR_LOW_ATTACK1_HIGH, highidx=VEHICULAR_HIGH_ATTACK1_HIGH, ctype=ChartFeature.SAW)
 
         # Process Simple Speed Check (SSC)
         ssc_low_df, ssc_high_df = PeformanceResult.get_result_data(

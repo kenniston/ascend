@@ -36,21 +36,21 @@
 # POSSIBILITY OF SUCH DAMAGE.
 # ---------------------------------------------------------------------------
 
-import jpype
+#import jpype
 import pandas
 from abc import ABC
-import jpype.imports
+#import jpype.imports
 from math import sqrt
 from pathlib import Path
-from jpype.types import *
+#from jpype.types import *
 from typing import Sequence, Tuple
 from scipy.spatial import distance
 from ascendcontroller.base import Feature, FeatureResult, ResultType, FeatureParam
 
-jpype.startJVM(classpath=[f'{Path(__file__).parent.parent}/lib/*'])
+# jpype.startJVM(classpath=[f'{Path(__file__).parent.parent}/lib/*'])
 # pyright: reportMissingImports=false
-from br.ita import Initializer
-from no.uio.subjective_logic.opinion import SubjectiveOpinion
+# from br.ita import Initializer
+# from no.uio.subjective_logic.opinion import SubjectiveOpinion
 
 
 class SscFeatureParam(FeatureParam, ABC):
@@ -70,17 +70,17 @@ class SscFeature(Feature):
     """
     _UNCERTAINTY_FACTOR = 0.1
 
-    @staticmethod
-    def lib():
-        Initializer().init()
+    # @staticmethod
+    # def lib():
+    #     Initializer().init()
 
     def __init__(self, factory: SscFeatureParam):
         super().__init__(factory=factory)
 
     def check_speed(self, threshold: float, curr: pandas.Series, prev: pandas.Series) -> Tuple[int, ResultType]:
         if prev is None or curr.sender != prev.sender:
-            opition = SubjectiveOpinion(1 - SscFeature._UNCERTAINTY_FACTOR, 0.0, SscFeature._UNCERTAINTY_FACTOR)
-            return (-1, opition.getExpectation(), ResultType.Normal.name)
+            # opition = SubjectiveOpinion(1 - SscFeature._UNCERTAINTY_FACTOR, 0.0, SscFeature._UNCERTAINTY_FACTOR)
+            return (-1, 1, ResultType.Normal.name)
         curr_time = curr['rcvTime']
         prev_time = prev['rcvTime']
         curr_pos = curr['senderPosition']
@@ -93,17 +93,17 @@ class SscFeature(Feature):
         delta_speed = abs(last_speed - actual_speed)
         if delta_speed < threshold:
             if delta_speed <= 0:
-                opition = SubjectiveOpinion(1 - SscFeature._UNCERTAINTY_FACTOR, 0.0, SscFeature._UNCERTAINTY_FACTOR)
-                return (delta_speed, opition.getExpectation(), ResultType.Normal.name)
+                # opition = SubjectiveOpinion(1 - SscFeature._UNCERTAINTY_FACTOR, 0.0, SscFeature._UNCERTAINTY_FACTOR)
+                return (delta_speed, 1, ResultType.Normal.name)
             else:
                 disbelief = delta_speed / threshold * (1 - SscFeature._UNCERTAINTY_FACTOR)
                 belief = 1 - SscFeature._UNCERTAINTY_FACTOR - disbelief
-                opition = SubjectiveOpinion(belief, disbelief, SscFeature._UNCERTAINTY_FACTOR)
-                expectation = opition.getExpectation()
-                return (delta_speed, expectation, ResultType.Normal.name if expectation >= 0.2 else ResultType.Attack.name)
+                # opition = SubjectiveOpinion(belief, disbelief, SscFeature._UNCERTAINTY_FACTOR)
+                # expectation = opition.getExpectation()
+                return (delta_speed, belief, ResultType.Normal.name if belief >= 0.2 else ResultType.Attack.name)
         else:
-            opition = SubjectiveOpinion(0.0, 1 - SscFeature._UNCERTAINTY_FACTOR, SscFeature._UNCERTAINTY_FACTOR)
-            return (delta_speed, opition.getExpectation(), ResultType.Attack.name)
+            # opition = SubjectiveOpinion(0.0, 1 - SscFeature._UNCERTAINTY_FACTOR, SscFeature._UNCERTAINTY_FACTOR)
+            return (delta_speed, 0, ResultType.Attack.name)
 
     # noinspection PyMethodMayBeStatic
     def process(self, data: pandas.DataFrame) -> FeatureResult:

@@ -41,3 +41,47 @@ from abc import ABC
 from typing import Sequence
 from scipy.spatial import distance
 from ascendcontroller.base import Feature, FeatureResult, ResultType, FeatureParam
+
+
+class SawFeatureParam(FeatureParam, ABC):
+    # List for Sudden Appearance Warning Detector
+    thresholds: Sequence[int]
+
+
+class SawFeature(Feature):
+    """
+        Required columns in Data Frame:
+            - senderPosition        - (x, y, z) tuple
+            - receiverPosition      - (x, y, z) tuple
+            - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                               4-attack, 8-attack, 16-attack]
+    """
+
+    def __init__(self, factory: SawFeatureParam):
+        super().__init__(factory=factory)
+
+    # noinspection PyMethodMayBeStatic
+    def process(self, data: pandas.DataFrame) -> FeatureResult:
+        params: SawFeatureParam = self.factory.build(data)
+        df = params.data
+
+        # Create distance column in Data Frame
+        df['distance'] = df.apply(
+            lambda row: distance.euclidean(row.senderPosition, row.receiverPosition), axis=1)
+
+        # Remove position columns
+        df = df.drop(columns=['senderPosition', 'receiverPosition'])
+
+        # Check for attacker for the current threshold
+        for threshold in params.thresholds:
+            df[f'saw{threshold}'] = df.apply(lambda row: ResultType.Normal.name
+                                             if row.distance <= threshold else ResultType.Attack.name, axis=1)
+
+        # Check confusion matrix for each distance
+        for threshold in params.thresholds:
+            df[f'cmtx{threshold}'] = df.apply(lambda row: self.confusion_matrix(
+                row.attackerType == 1 or row.attackerType == 2 or row.attackerType == 4 or row.attackerType == 8
+                or row.attackerType == 16, row[f'saw{threshold}'] == ResultType.Attack.name).name, axis=1)
+
+        # Return result DataFrame
+        return FeatureResult(data=df, prefix='saw-')

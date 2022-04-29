@@ -42,6 +42,7 @@ from ascendcontroller.base import CsvRunner
 from ascendcontroller.features.art import ArtFeature, ArtFeatureParam
 from ascendcontroller.features.dmv import DmvFeature, DmvFeatureParam
 from ascendcontroller.features.ssc import SscFeature, SscFeatureParam
+from ascendcontroller.features.saw import SawFeature, SawFeatureParam
 
 
 class ArtParam(ArtFeatureParam):
@@ -130,6 +131,34 @@ class SscParam(SscFeatureParam):
         return param
 
 
+class SawParam(SawFeatureParam):
+    """ SawFeature requires a specific Data Frame with the following columns:
+
+        - senderPosition        - (x, y, z) tuple
+        - receiverPosition      - (x, y, z) tuple
+        - attackerType          - integer for attack type [0-normal, 1-attack, 2-attack, 
+                                                           4-attack, 8-attack, 16-attack]
+    """
+    def build(data: pandas.DataFrame):
+        param = SawParam()
+        # Configure the Thresolds for Sudden Appearance Warning
+        param.thresholds = [25, 100, 200]
+
+        # Create the required columns for the feature
+        data['senderPosition'] = data.apply(lambda row: (row.pxSnd, row.pySnd, row.pzSnd), axis=1)
+        data['receiverPosition'] = data.apply(lambda row: (row.pxRcv, row.pyRcv, row.pzRcv), axis=1)
+        data['messageID'] = data.apply(lambda row: int(row.messageID), axis=1)
+        data['sender'] = data.apply(lambda row: int(row.sender), axis=1)
+
+        # Drop unnecessary columns from Data Frame
+        data = data.drop(columns=['Unnamed: 0', 'sendTime', 'gpsTime', 'rcvTime', 'pxSnd', 'pySnd',
+                                  'pzSnd', 'sxSnd', 'sySnd', 'szSnd', 'pxRcv', 'pyRcv', 'pzRcv',
+                                  'sxRcv', 'syRcv', 'szRcv'])
+
+        param.data = data
+        return param
+
+
 def process(root_path: str, result_path: str):
     # VeReMi Misbehavior file filter
     file_filter = VEHICULAR_LOW_ATTACK1_HIGH + VEHICULAR_HIGH_ATTACK1_HIGH + \
@@ -140,9 +169,9 @@ def process(root_path: str, result_path: str):
     CsvRunner(
         path=root_path,
         destination=result_path,
-        features=[SscFeature(factory=SscParam)],
+        features=[SawFeature(factory=SawParam)],
         idxfilter=file_filter,
-        processes=1,
+        # processes=1,
     ).process()
 
 
